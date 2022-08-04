@@ -7,22 +7,28 @@ from particles import ParticleEffect
 
 class Level:
     def __init__(self, levelData,surface):
+        #general
         self.displaySurface = surface
         self.worldShift = -5
-
+        #terrain
         terrainLayout = importCsvLayout(levelData['terrain'])
         self.terrainSprites = self.createTileGroup(terrainLayout, 'terrain')
+
+        #grass
+        grassLayout = importCsvLayout(levelData['grass'])
+        self.grassSprites = self.createTileGroup(grassLayout, 'grass')
         #self.setupLevel(levelData)
+
+        #crates
+        crateLayout = importCsvLayout(levelData['crates'])
+        self.crateSprites = self.createTileGroup(crateLayout, 'crates')
         
+
         self.currentX = 0
 
         #dust
         self.dustSprite = pygame.sprite.GroupSingle()
         self.playerOnGround = False
-
-    def run(self):
-        self.terrainSprites.draw(self.displaySurface)
-        self.terrainSprites.update(self.worldShift)
 
     def createTileGroup(self, layout, type):
         spriteGroup = pygame.sprite.Group()
@@ -37,10 +43,25 @@ class Level:
                     terrainTileList = importCutGraphics('../graphics/terrain/terrain_tiles.png')
                     tileSurface = terrainTileList[int(val)]
                     sprite = StaticTile(tileSize, x, y, tileSurface)
-                    sprite.image = tileSurface
-                    spriteGroup.add(sprite)
+                if type == 'grass':
+                    grassTileList = importCutGraphics('../graphics/decoration/grass/grass.png')
+                    tileSurface = grassTileList[int(val)]
+                    sprite = StaticTile(tileSize,x,y,tileSurface)
+                if type == 'crates':
+                    sprite = Crate(tileSize, x, y)
 
+                spriteGroup.add(sprite)
         return spriteGroup
+
+    def run(self):
+        self.terrainSprites.update(self.worldShift)
+        self.terrainSprites.draw(self.displaySurface)
+        #grass
+        self.grassSprites.update(self.worldShift)
+        self.grassSprites.draw(self.displaySurface)
+        #crates
+        self.crateSprites.update(self.worldShift)
+        self.crateSprites.draw(self.displaySurface)
 '''
     def setupLevel(self, layout):
         self.tiles = pygame.sprite.Group()
