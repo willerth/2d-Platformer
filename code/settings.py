@@ -1,3 +1,9 @@
+tileSize = 64
+verticalTiles = 11
+
+screenWidth = 1200
+screenHeight = tileSize * verticalTiles
+
 levelMap = [
     '                            ',
     '                            ',
@@ -11,6 +17,3 @@ levelMap = [
     '    XXXX  XXXXXX  XX  XXXX  ',
     'XXXXXXXX  XXXXXX  XX  XXXX  ']
 
-tileSize = 64
-screenWidth = 1200
-screenHeight = tileSize * len(levelMap)

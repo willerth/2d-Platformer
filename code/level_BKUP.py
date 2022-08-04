@@ -1,47 +1,20 @@
 import pygame
-from tiles import *
+from tiles import Tile
 from player import Player
 from settings import *
-from support import *
 from particles import ParticleEffect
 
 class Level:
     def __init__(self, levelData,surface):
         self.displaySurface = surface
-        self.worldShift = -5
-
-        terrainLayout = importCsvLayout(levelData['terrain'])
-        self.terrainSprites = self.createTileGroup(terrainLayout, 'terrain')
-        #self.setupLevel(levelData)
-        
+        self.setupLevel(levelData)
+        self.worldShift = 0
         self.currentX = 0
 
         #dust
         self.dustSprite = pygame.sprite.GroupSingle()
         self.playerOnGround = False
 
-    def run(self):
-        self.terrainSprites.draw(self.displaySurface)
-        self.terrainSprites.update(self.worldShift)
-
-    def createTileGroup(self, layout, type):
-        spriteGroup = pygame.sprite.Group()
-
-        for rowIdx, row in enumerate(layout):
-            for colIdx, val in enumerate(row):
-                if val == '-1': continue
-                x = colIdx * tileSize
-                y = rowIdx * tileSize
-
-                if type == 'terrain':
-                    terrainTileList = importCutGraphics('../graphics/terrain/terrain_tiles.png')
-                    tileSurface = terrainTileList[int(val)]
-                    sprite = StaticTile(tileSize, x, y, tileSurface)
-                    sprite.image = tileSurface
-                    spriteGroup.add(sprite)
-
-        return spriteGroup
-'''
     def setupLevel(self, layout):
         self.tiles = pygame.sprite.Group()
         self.player = pygame.sprite.GroupSingle()
@@ -147,4 +120,3 @@ class Level:
         self.verticalMovement()
         self.createLandingDust()
         self.player.draw(self.displaySurface)
-'''
