@@ -23,6 +23,15 @@ class Level:
         crateLayout = importCsvLayout(levelData['crates'])
         self.crateSprites = self.createTileGroup(crateLayout, 'crates')
         
+        #coins
+        coinLayout = importCsvLayout(levelData['coins'])
+        self.coinSprites = self.createTileGroup(coinLayout, 'coins')
+
+        #palms
+        fgPalmLayout = importCsvLayout(levelData['fg palms'])
+        self.fgPalmSprites = self.createTileGroup(fgPalmLayout, 'fg palms')
+        bgPalmLayout = importCsvLayout(levelData['bg palms'])
+        self.bgPalmSprites = self.createTileGroup(fgPalmLayout, 'bg palms')
 
         self.currentX = 0
 
@@ -49,19 +58,39 @@ class Level:
                     sprite = StaticTile(tileSize,x,y,tileSurface)
                 if type == 'crates':
                     sprite = Crate(tileSize, x, y)
+                if type == 'coins':
+                    path = '../graphics/coins/' + ('gold' if val == '0' else 'silver')
+                    sprite = Coin(tileSize, x, y, path)
+                if type == 'fg palms':
+                    path = '../graphics/terrain/palm_' + ('small' if val == '0' else 'large')
+                    sprite = Palm(tileSize, x, y, path)
+                if type == 'bg palms':
+                    path = '../graphics/terrain/palm_bg'
+                    sprite = Palm(tileSize,x,y,path)
 
                 spriteGroup.add(sprite)
         return spriteGroup
 
     def run(self):
+        #background
+        self.bgPalmSprites.update(self.worldShift)
+        self.bgPalmSprites.draw(self.displaySurface)
+        #terrain
         self.terrainSprites.update(self.worldShift)
         self.terrainSprites.draw(self.displaySurface)
-        #grass
-        self.grassSprites.update(self.worldShift)
-        self.grassSprites.draw(self.displaySurface)
         #crates
         self.crateSprites.update(self.worldShift)
         self.crateSprites.draw(self.displaySurface)
+        #grass
+        self.grassSprites.update(self.worldShift)
+        self.grassSprites.draw(self.displaySurface)
+        #coins
+        self.coinSprites.update(self.worldShift)
+        self.coinSprites.draw(self.displaySurface)
+        #palms
+        self.fgPalmSprites.update(self.worldShift)
+        self.fgPalmSprites.draw(self.displaySurface)
+        
 '''
     def setupLevel(self, layout):
         self.tiles = pygame.sprite.Group()
