@@ -1,23 +1,29 @@
+from distutils.spawn import spawn
 import pygame
 from tiles import *
 from player import Player
 from settings import *
 from support import *
 from particles import ParticleEffect
+from enemy import *
 
 class Level:
     def __init__(self, levelData,surface):
         #general
         self.displaySurface = surface
-        self.worldShift = -5
+        self.worldShift = -4
         #terrain
         terrainLayout = importCsvLayout(levelData['terrain'])
         self.terrainSprites = self.createTileGroup(terrainLayout, 'terrain')
 
+        playerLayout = importCsvLayout(levelData['player'])
+        self.player = pygame.sprite.GroupSingle()
+        self.goal = pygame.sprite.GroupSingle()
+        self.playerSetup(playerLayout)
+
         #grass
         grassLayout = importCsvLayout(levelData['grass'])
         self.grassSprites = self.createTileGroup(grassLayout, 'grass')
-        #self.setupLevel(levelData)
 
         #crates
         crateLayout = importCsvLayout(levelData['crates'])
@@ -31,13 +37,34 @@ class Level:
         fgPalmLayout = importCsvLayout(levelData['fg palms'])
         self.fgPalmSprites = self.createTileGroup(fgPalmLayout, 'fg palms')
         bgPalmLayout = importCsvLayout(levelData['bg palms'])
-        self.bgPalmSprites = self.createTileGroup(fgPalmLayout, 'bg palms')
+        self.bgPalmSprites = self.createTileGroup(bgPalmLayout, 'bg palms')
+
+        #enemies
+        enemyLayout = importCsvLayout(levelData['enemies'])
+        self.enemySprites = self.createTileGroup(enemyLayout, 'enemies')
+
+        #constraints
+        constraintLayout = importCsvLayout(levelData['constraints'])
+        self.constraintSprites = self.createTileGroup(constraintLayout, 'constraint')
 
         self.currentX = 0
 
         #dust
         self.dustSprite = pygame.sprite.GroupSingle()
         self.playerOnGround = False
+
+    def playerSetup(self,layout):
+        for rowIdx, row in enumerate(layout):
+            for colIdx, val in enumerate(row):
+                x = colIdx * tileSize
+                y = rowIdx * tileSize
+                if val == '0':
+                    print('player goes here')
+                if val == '1':
+                    hatSurface = pygame.image.load('../graphics/character/hat.png').convert_alpha()
+                    sprite = StaticTile(tileSize, x,y,hatSurface)
+                    self.goal.add(sprite)
+
 
     def createTileGroup(self, layout, type):
         spriteGroup = pygame.sprite.Group()
@@ -67,7 +94,10 @@ class Level:
                 if type == 'bg palms':
                     path = '../graphics/terrain/palm_bg'
                     sprite = Palm(tileSize,x,y,path)
-
+                if type == 'enemies':
+                    sprite = Enemy(tileSize, x, y)
+                if type == 'constraint':
+                    sprite = Tile(tileSize, x, y)
                 spriteGroup.add(sprite)
         return spriteGroup
 
@@ -78,6 +108,11 @@ class Level:
         #terrain
         self.terrainSprites.update(self.worldShift)
         self.terrainSprites.draw(self.displaySurface)
+        #enemies
+        self.enemySprites.update(self.worldShift)
+        self.constraintSprites.update(self.worldShift)
+        self.enemyCollisionReverse()
+        self.enemySprites.draw(self.displaySurface)
         #crates
         self.crateSprites.update(self.worldShift)
         self.crateSprites.draw(self.displaySurface)
@@ -90,7 +125,15 @@ class Level:
         #palms
         self.fgPalmSprites.update(self.worldShift)
         self.fgPalmSprites.draw(self.displaySurface)
+
+        #player sprites
+        self.goal.update(self.worldShift)
+        self.goal.draw(self.displaySurface)
         
+    def enemyCollisionReverse(self):
+        for enemy in self.enemySprites.sprites():
+            if pygame.sprite.spritecollide(enemy, self.constraintSprites, False): enemy.reverse()
+
 '''
     def setupLevel(self, layout):
         self.tiles = pygame.sprite.Group()
