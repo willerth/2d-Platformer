@@ -6,16 +6,18 @@ from settings import *
 from support import *
 from particles import ParticleEffect
 from enemy import *
+from decoration import *
 
 class Level:
     def __init__(self, levelData,surface):
         #general
         self.displaySurface = surface
-        self.worldShift = -4
+        self.worldShift = 0
         #terrain
         terrainLayout = importCsvLayout(levelData['terrain'])
         self.terrainSprites = self.createTileGroup(terrainLayout, 'terrain')
 
+        #player
         playerLayout = importCsvLayout(levelData['player'])
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
@@ -47,6 +49,12 @@ class Level:
         constraintLayout = importCsvLayout(levelData['constraints'])
         self.constraintSprites = self.createTileGroup(constraintLayout, 'constraint')
 
+        #decoration
+        self.sky = Sky(8)
+        self.levelWidth = len(terrainLayout[0]) * tileSize
+        self.water = Water(screenHeight - 15, self.levelWidth)
+        self.clouds = Clouds(6,self.levelWidth,20)
+
         self.currentX = 0
 
         #dust
@@ -59,7 +67,8 @@ class Level:
                 x = colIdx * tileSize
                 y = rowIdx * tileSize
                 if val == '0':
-                    print('player goes here')
+                    sprite = Player((x,y),self.displaySurface, self.createJumpParticles)
+                    self.player.add(sprite)
                 if val == '1':
                     hatSurface = pygame.image.load('../graphics/character/hat.png').convert_alpha()
                     sprite = StaticTile(tileSize, x,y,hatSurface)
@@ -101,53 +110,11 @@ class Level:
                 spriteGroup.add(sprite)
         return spriteGroup
 
-    def run(self):
-        #background
-        self.bgPalmSprites.update(self.worldShift)
-        self.bgPalmSprites.draw(self.displaySurface)
-        #terrain
-        self.terrainSprites.update(self.worldShift)
-        self.terrainSprites.draw(self.displaySurface)
-        #enemies
-        self.enemySprites.update(self.worldShift)
-        self.constraintSprites.update(self.worldShift)
-        self.enemyCollisionReverse()
-        self.enemySprites.draw(self.displaySurface)
-        #crates
-        self.crateSprites.update(self.worldShift)
-        self.crateSprites.draw(self.displaySurface)
-        #grass
-        self.grassSprites.update(self.worldShift)
-        self.grassSprites.draw(self.displaySurface)
-        #coins
-        self.coinSprites.update(self.worldShift)
-        self.coinSprites.draw(self.displaySurface)
-        #palms
-        self.fgPalmSprites.update(self.worldShift)
-        self.fgPalmSprites.draw(self.displaySurface)
 
-        #player sprites
-        self.goal.update(self.worldShift)
-        self.goal.draw(self.displaySurface)
         
     def enemyCollisionReverse(self):
         for enemy in self.enemySprites.sprites():
             if pygame.sprite.spritecollide(enemy, self.constraintSprites, False): enemy.reverse()
-
-'''
-    def setupLevel(self, layout):
-        self.tiles = pygame.sprite.Group()
-        self.player = pygame.sprite.GroupSingle()
-        for rowIdx, row in enumerate(layout):
-            for colIdx, cell in enumerate(row):
-                x = tileSize * colIdx
-                y = tileSize * rowIdx
-                if cell == 'X':
-                    tile = Tile((x,y), tileSize)
-                    self.tiles.add(tile)
-                #player
-                if cell == 'P':
-                    self.player.add(Player((x,y), self.displaySurface, self.createJumpParticles))
 
     def createJumpParticles(self, pos):
         if self.player.sprite.facingRight:
@@ -176,10 +143,10 @@ class Level:
         player = self.player.sprite
         playerX = player.rect.centerx
         directionX = player.direction.x
-        if playerX < screenWidth/4 and directionX < 0:
+        if playerX < screenWidth/3 and directionX < 0:
             self.worldShift = 8
             player.speed = 0
-        elif playerX > screenWidth * 3/4 and directionX > 0:
+        elif playerX > screenWidth * 2/3 and directionX > 0:
             self.worldShift = -8
             player.speed = 0
         else:
@@ -189,7 +156,8 @@ class Level:
     def horizontalMovement(self):
         player = self.player.sprite
         player.rect.x += player.direction.x * player.speed
-        for sprite in self.tiles.sprites():
+        collidableSprites = self.terrainSprites.sprites() + self.fgPalmSprites.sprites() + self.crateSprites.sprites()
+        for sprite in collidableSprites:
             if sprite.rect.colliderect(player.rect):
                 if player.direction.x < 0 :
                     player.rect.left = sprite.rect.right
@@ -209,7 +177,8 @@ class Level:
         player = self.player.sprite
         player.direction.y += player.gravity
         player.rect.y += player.direction.y
-        for sprite in self.tiles.sprites():
+        collidableSprites = self.terrainSprites.sprites() + self.fgPalmSprites.sprites() + self.crateSprites.sprites()
+        for sprite in collidableSprites:
             if sprite.rect.colliderect(player.rect):
                 if player.direction.y < 0:
                     player.direction.y = 0
@@ -224,20 +193,44 @@ class Level:
         if player.onCeiling and (player.direction.y > 0): player.onCeiling = False
 
     def run(self):
-        #dust
-        self.dustSprite.update(self.worldShift)
-        self.dustSprite.draw(self.displaySurface)
+        #decoration
+        self.sky.draw(self.displaySurface)
+        self.clouds.draw(self.displaySurface, self.worldShift)
+        #background
+        self.bgPalmSprites.update(self.worldShift)
+        self.bgPalmSprites.draw(self.displaySurface)
+        #terrain
+        self.terrainSprites.update(self.worldShift)
+        self.terrainSprites.draw(self.displaySurface)
+        #enemies
+        self.enemySprites.update(self.worldShift)
+        self.constraintSprites.update(self.worldShift)
+        self.enemyCollisionReverse()
+        self.enemySprites.draw(self.displaySurface)
+        #crates
+        self.crateSprites.update(self.worldShift)
+        self.crateSprites.draw(self.displaySurface)
+        #grass
+        self.grassSprites.update(self.worldShift)
+        self.grassSprites.draw(self.displaySurface)
+        #coins
+        self.coinSprites.update(self.worldShift)
+        self.coinSprites.draw(self.displaySurface)
+        #palms
+        self.fgPalmSprites.update(self.worldShift)
+        self.fgPalmSprites.draw(self.displaySurface)
 
-        #tiles
-        self.tiles.update(self.worldShift)
-        self.tiles.draw(self.displaySurface)
-        self.scrollX()
-
-        #player
+        #player sprites
         self.player.update()
         self.horizontalMovement()
         self.getPlayerOnGround()
         self.verticalMovement()
         self.createLandingDust()
+        self.scrollX()
+        self.dustSprite.update(self.worldShift)
+        self.dustSprite.draw(self.displaySurface)
         self.player.draw(self.displaySurface)
-'''
+        self.goal.update(self.worldShift)
+        self.goal.draw(self.displaySurface)
+        #water
+        self.water.draw(self.displaySurface, self.worldShift)
