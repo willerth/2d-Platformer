@@ -22,11 +22,12 @@ class Icon(pygame.sprite.Sprite):
         self.rect.center = self.pos
 
 class Overworld:
-    def __init__(self, startLevel, maxLevel, surface):
+    def __init__(self, startLevel, maxLevel, surface, createLevel):
         #setup
         self.displaySurface = surface
         self.maxLevel = maxLevel
         self.currentLevel = startLevel
+        self.createLevel = createLevel
 
         #movement logic
         self.moveDirection = pygame.math.Vector2(0,0)
@@ -48,7 +49,8 @@ class Overworld:
 
     def drawPaths(self):
         points = [node['nodePos'] for index, node in enumerate(levels.values()) if index <= self.maxLevel]
-        pygame.draw.lines(self.displaySurface, 'red', False, points, 6)
+        if len(points) > 1:
+            pygame.draw.lines(self.displaySurface, 'red', False, points, 6)
 
     def setupIcon(self):
         self.icon = pygame.sprite.GroupSingle()
@@ -66,6 +68,8 @@ class Overworld:
                 self.moveDirection = self.getMovementData(-1)
                 self.currentLevel -= 1
                 self.moving = True
+            elif keys[pygame.K_SPACE]:
+                self.createLevel(self.currentLevel)
 
     def getMovementData(self, direction):
         start = pygame.math.Vector2(self.nodes.sprites()[self.currentLevel].rect.center)
