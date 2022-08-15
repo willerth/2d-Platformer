@@ -9,12 +9,31 @@ from decoration import *
 from gameData import levels
 
 
-'''
+
 class Level:
-    def __init__(self, levelData,surface):
+    def __init__(self, currentLevel, surface, createOverworld): 
+        self.displaySurface = surface
+        self.createOverworld = createOverworld
+        self.currentLevel = currentLevel
+        levelData = levels[currentLevel]
+        levelContent = levelData['content']
+        self.newMaxLevel = levelData['unlock']
+        #level display
+        self.font = pygame.font.Font(None, 40)
+        self.textSurf = self.font.render(levelContent, True, 'white')
+        self.textRect = self.textSurf.get_rect(center = (screenWidth/2, screenHeight/2))
+
+    def __init__(self, currentLevel, surface, createOverworld):
         #general
         self.displaySurface = surface
         self.worldShift = 0
+        self.currentX = 0
+
+        #overworld connection
+        self.createOverworld = createOverworld
+        self.currentLevel = currentLevel
+        levelData = levels[currentLevel]
+        self.newMaxLevel = levelData['unlock']
         #terrain
         terrainLayout = importCsvLayout(levelData['terrain'])
         self.terrainSprites = self.createTileGroup(terrainLayout, 'terrain')
@@ -56,8 +75,6 @@ class Level:
         self.levelWidth = len(terrainLayout[0]) * tileSize
         self.water = Water(screenHeight - 15, self.levelWidth)
         self.clouds = Clouds(6,self.levelWidth,20)
-
-        self.currentX = 0
 
         #dust
         self.dustSprite = pygame.sprite.GroupSingle()
@@ -194,6 +211,14 @@ class Level:
         if player.onGround and (player.direction.y < 0 or player.direction.y > 1): player.onGround = False
         if player.onCeiling and (player.direction.y > 0): player.onCeiling = False
 
+    def checkDeath(self):
+        if self.player.sprite.rect.top > screenHeight:
+            self.createOverworld(self.currentLevel, self.currentLevel)
+
+    def checkWin(self):
+        if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
+            self.createOverworld(self.currentLevel, self.newMaxLevel)
+
     def run(self):
         #decoration
         self.sky.draw(self.displaySurface)
@@ -234,31 +259,9 @@ class Level:
         self.player.draw(self.displaySurface)
         self.goal.update(self.worldShift)
         self.goal.draw(self.displaySurface)
+
+        self.checkDeath()
+        self.checkWin()
         #water
         self.water.draw(self.displaySurface, self.worldShift)
-'''
 
-class Level:
-    def __init__(self, currentLevel, surface, createOverworld):
-        self.displaySurface = surface
-        self.createOverworld = createOverworld
-        self.currentLevel = currentLevel
-        levelData = levels[currentLevel]
-        levelContent = levelData['content']
-        self.newMaxLevel = levelData['unlock']
-        #level display
-        self.font = pygame.font.Font(None, 40)
-        self.textSurf = self.font.render(levelContent, True, 'white')
-        self.textRect = self.textSurf.get_rect(center = (screenWidth/2, screenHeight/2))
-
-    def input(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_RETURN]:
-            self.createOverworld(self.currentLevel, self.newMaxLevel)
-        elif keys[pygame.K_ESCAPE]:
-            self.createOverworld(self.currentLevel, self.currentLevel)
-            
-
-    def run(self):
-        self.input()
-        self.displaySurface.blit(self.textSurf, self.textRect)

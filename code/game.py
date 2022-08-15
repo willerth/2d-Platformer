@@ -29,7 +29,6 @@ pygame.init()
 screen = pygame.display.set_mode((screenWidth, screenHeight))
 clock = pygame.time.Clock()
 game = Game()
-#level = Level(level0, screen)
 
 while True:
     for event in pygame.event.get():
@@ -37,7 +36,7 @@ while True:
             pygame.quit()
             sys.exit()
 
-    screen.fill('black')
+    screen.fill('grey')
     game.run()
 
     pygame.display.update()

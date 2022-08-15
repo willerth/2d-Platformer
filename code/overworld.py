@@ -1,21 +1,35 @@
 import pygame
 from gameData import levels
+from support import importFolder
+from decoration import Sky
 
 class Node(pygame.sprite.Sprite):
-    def __init__(self,pos,status, iconSpeed):
+    def __init__(self,pos,status,iconSpeed, path):
         super().__init__()
-        self.image=pygame.Surface((100,80))
-        fillColor = 'red' if status == 'available' else 'grey'
-        self.image.fill(fillColor)
+        self.frames = importFolder(path)
+        self.frameIdx = 0
+        self.image=self.frames[0]
+        self.status = status
         self.rect = self.image.get_rect(center=pos)
         self.detectionZone = pygame.Rect(self.rect.centerx - iconSpeed/2, self.rect.centery - iconSpeed/2, iconSpeed, iconSpeed)
+
+    def animate(self):
+        self.frameIdx += 0.15
+        if self.frameIdx >= len(self.frames): self.frameIdx = 0
+        self.image = self.frames[int(self.frameIdx)]
+
+    def update(self):
+        self.animate()
+        if not self.status == 'available':
+            tintSurf = self.image.copy()
+            tintSurf.fill('black', None, pygame.BLEND_RGBA_MULT)
+            self.image.blit(tintSurf, (0,0))
 
 class Icon(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__()
         self.pos = pos
-        self.image = pygame.Surface((20,20))
-        self.image.fill('blue')
+        self.image = pygame.image.load('../graphics/overworld/hat.png').convert_alpha()
         self.rect = self.image.get_rect(center = pos)
 
     def update(self):
@@ -37,20 +51,21 @@ class Overworld:
         #sprites
         self.setupNodes()
         self.setupIcon()
+        self.sky = Sky(8, 'overworld')
     
     def setupNodes(self):
         self.nodes = pygame.sprite.Group()
         for index, nodeData in enumerate(levels.values()):
             if index <= self.maxLevel:
-                nodeSprite = Node(nodeData['nodePos'], 'available', self.speed)
+                nodeSprite = Node(nodeData['nodePos'], 'available', self.speed, nodeData['nodeGraphics'])
             else:
-                nodeSprite = Node (nodeData['nodePos'], 'locked', self.speed)
+                nodeSprite = Node (nodeData['nodePos'], 'locked', self.speed, nodeData['nodeGraphics'])
             self.nodes.add(nodeSprite)
 
     def drawPaths(self):
         points = [node['nodePos'] for index, node in enumerate(levels.values()) if index <= self.maxLevel]
         if len(points) > 1:
-            pygame.draw.lines(self.displaySurface, 'red', False, points, 6)
+            pygame.draw.lines(self.displaySurface, '#a04f45', False, points, 6)
 
     def setupIcon(self):
         self.icon = pygame.sprite.GroupSingle()
@@ -89,6 +104,9 @@ class Overworld:
     def run(self):
         self.input()
         self.updateIconPosition()
+        self.sky.draw(self.displaySurface)
         self.drawPaths()
         self.nodes.draw(self.displaySurface)
+        self.nodes.update()
+
         self.icon.draw(self.displaySurface)
