@@ -11,19 +11,7 @@ from gameData import levels
 
 
 class Level:
-    def __init__(self, currentLevel, surface, createOverworld): 
-        self.displaySurface = surface
-        self.createOverworld = createOverworld
-        self.currentLevel = currentLevel
-        levelData = levels[currentLevel]
-        levelContent = levelData['content']
-        self.newMaxLevel = levelData['unlock']
-        #level display
-        self.font = pygame.font.Font(None, 40)
-        self.textSurf = self.font.render(levelContent, True, 'white')
-        self.textRect = self.textSurf.get_rect(center = (screenWidth/2, screenHeight/2))
-
-    def __init__(self, currentLevel, surface, createOverworld):
+    def __init__(self, currentLevel, surface, createOverworld, changeCoins):
         #general
         self.displaySurface = surface
         self.worldShift = 0
@@ -43,6 +31,9 @@ class Level:
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
         self.playerSetup(playerLayout)
+
+        #ui
+        self.changeCoins = changeCoins
 
         #grass
         grassLayout = importCsvLayout(levelData['grass'])
@@ -115,7 +106,8 @@ class Level:
                     sprite = Crate(tileSize, x, y)
                 if type == 'coins':
                     path = '../graphics/coins/' + ('gold' if val == '0' else 'silver')
-                    sprite = Coin(tileSize, x, y, path)
+                    value = 5 if val == '0' else 1
+                    sprite = Coin(tileSize, x, y, path, value)
                 if type == 'fg palms':
                     path = '../graphics/terrain/palm_' + ('small' if val == '0' else 'large')
                     sprite = Palm(tileSize, x, y, path)
@@ -219,6 +211,12 @@ class Level:
         if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
             self.createOverworld(self.currentLevel, self.newMaxLevel)
 
+    def checkCoinCollisions(self):
+        collidedCoins = pygame.sprite.spritecollide(self.player.sprite, self.coinSprites, True)
+        if collidedCoins:
+            for coin in collidedCoins:
+                self.changeCoins(coin.value)
+
     def run(self):
         #decoration
         self.sky.draw(self.displaySurface)
@@ -243,6 +241,7 @@ class Level:
         #coins
         self.coinSprites.update(self.worldShift)
         self.coinSprites.draw(self.displaySurface)
+        self.checkCoinCollisions()
         #palms
         self.fgPalmSprites.update(self.worldShift)
         self.fgPalmSprites.draw(self.displaySurface)
