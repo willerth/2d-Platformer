@@ -6,7 +6,9 @@ class ParticleEffect(pygame.sprite.Sprite):
         super().__init__()
         self.frameIndex = 0
         self.animationSpeed = 0.5
-        self.frames = importFolder('../graphics/character/dust_particles/' + type)
+        if type == 'explosion':
+            self.frames = importFolder('../graphics/enemy/explosion')
+        else: self.frames = importFolder('../graphics/character/dust_particles/' + type)
         self.image = self.frames[int(self.frameIndex)]
         self.rect = self.image.get_rect(center = pos)
     

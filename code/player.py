@@ -1,9 +1,11 @@
+from dataclasses import InitVar
 from turtle import pos
 import pygame
 from support import importFolder
+from math import sin
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self,pos,surface, createJumpParticles):
+    def __init__(self,pos,surface, createJumpParticles, changeHealth):
         super().__init__()
         self.importCharacterAssets()       
         self.frameIndex = 0
@@ -32,6 +34,13 @@ class Player(pygame.sprite.Sprite):
         self.onLeft = False
         self.onRight = False
 
+        #health management
+        self.changeHealth = changeHealth
+        self.invincible = False
+        self.invincibilityDuration = 600 #ms
+        self.hurtTime = 0
+
+
     def importCharacterAssets(self):
         characterPath = '../graphics/character/'
         self.animations = {'idle':[],'run':[],'jump':[],'fall':[]}
@@ -51,6 +60,12 @@ class Player(pygame.sprite.Sprite):
         if not self.facingRight:
             self.image = pygame.transform.flip(self.image, True, False)
 
+        if self.invincible:
+            alpha = self.waveValue()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
+            
         #set rectangle
         if self.onGround:
             if self.onRight:
@@ -111,8 +126,26 @@ class Player(pygame.sprite.Sprite):
         self.direction.y = self.jumpSpeed
         self.createJumpParticles(self.rect.midbottom)
 
+    def getDamage(self):
+        if not self.invincible:
+            self.changeHealth(-10)
+            self.invincible = True
+            self.hurtTime = pygame.time.get_ticks()
+            return
+
+    def invincibilityTimer(self):
+        if self.invincible:
+            currentTime = pygame.time.get_ticks()
+            if currentTime - self.hurtTime >= self.invincibilityDuration:
+                self.invincible = False
+
+    def waveValue(self):
+        value = sin(pygame.time.get_ticks())
+        return 255 if value > 0 else 0
+
     def update(self):
         self.getInput()
         self.getStatus()
+        self.invincibilityTimer()
         self.animate()
         self.animateDust()

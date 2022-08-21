@@ -11,7 +11,7 @@ from gameData import levels
 
 
 class Level:
-    def __init__(self, currentLevel, surface, createOverworld, changeCoins):
+    def __init__(self, currentLevel, surface, createOverworld, changeCoins, changeHealth):
         #general
         self.displaySurface = surface
         self.worldShift = 0
@@ -30,7 +30,7 @@ class Level:
         playerLayout = importCsvLayout(levelData['player'])
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
-        self.playerSetup(playerLayout)
+        self.playerSetup(playerLayout, changeHealth)
 
         #ui
         self.changeCoins = changeCoins
@@ -71,19 +71,21 @@ class Level:
         self.dustSprite = pygame.sprite.GroupSingle()
         self.playerOnGround = False
 
-    def playerSetup(self,layout):
+        #explosion particles
+        self.explosionSprites = pygame.sprite.Group()
+
+    def playerSetup(self,layout, changeHealth):
         for rowIdx, row in enumerate(layout):
             for colIdx, val in enumerate(row):
                 x = colIdx * tileSize
                 y = rowIdx * tileSize
                 if val == '0':
-                    sprite = Player((x,y),self.displaySurface, self.createJumpParticles)
+                    sprite = Player((x,y),self.displaySurface, self.createJumpParticles, changeHealth)
                     self.player.add(sprite)
                 if val == '1':
                     hatSurface = pygame.image.load('../graphics/character/hat.png').convert_alpha()
                     sprite = StaticTile(tileSize, x,y,hatSurface)
                     self.goal.add(sprite)
-
 
     def createTileGroup(self, layout, type):
         spriteGroup = pygame.sprite.Group()
@@ -120,9 +122,7 @@ class Level:
                     sprite = Tile(tileSize, x, y)
                 spriteGroup.add(sprite)
         return spriteGroup
-
-
-        
+      
     def enemyCollisionReverse(self):
         for enemy in self.enemySprites.sprites():
             if pygame.sprite.spritecollide(enemy, self.constraintSprites, False): enemy.reverse()
@@ -217,6 +217,21 @@ class Level:
             for coin in collidedCoins:
                 self.changeCoins(coin.value)
 
+    def checkEnemyCollisions(self):
+        enemyCollisions = pygame.sprite.spritecollide(self.player.sprite, self.enemySprites, False)
+        if enemyCollisions:
+            for enemy in enemyCollisions:
+                enemyCenter = enemy.rect.centery
+                enemyTop = enemy.rect.top
+                playerBottom = self.player.sprite.rect.bottom
+                if enemyTop < playerBottom < enemyCenter and self.player.sprite.direction.y >= 0:
+                    enemy.kill()
+                    self.player.sprite.direction.y = self.player.sprite.jumpSpeed
+                    explosionSprite = ParticleEffect(enemy.rect.center, 'explosion')
+                    self.explosionSprites.add(explosionSprite)
+                else:
+                    self.player.sprite.getDamage()
+
     def run(self):
         #decoration
         self.sky.draw(self.displaySurface)
@@ -231,7 +246,10 @@ class Level:
         self.enemySprites.update(self.worldShift)
         self.constraintSprites.update(self.worldShift)
         self.enemyCollisionReverse()
+        self.checkEnemyCollisions()
         self.enemySprites.draw(self.displaySurface)
+        self.explosionSprites.update(self.worldShift)
+        self.explosionSprites.draw(self.displaySurface)
         #crates
         self.crateSprites.update(self.worldShift)
         self.crateSprites.draw(self.displaySurface)
